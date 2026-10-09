@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>バックアップ - 就活管理</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav id="nav"></nav>
+<h1>バックアップ</h1>
+<p id="count"></p>
+<h2>書き出す</h2>
+<p>今のデータを、ファイルとして保存します。</p>
+<button id="exportBtn">書き出す(バックアップ)</button>
+<h2>読み込む</h2>
+<p>書き出したファイルから、データを復元します。今のデータは置き換わります。</p>
+<input type="file" id="importFile" accept=".json">
+<p id="message"></p>
+<script src="common.js"></script>
+<script>
+function showCount() {
+  document.getElementById("count").textContent =
+    "現在のデータ: 企業 " + load(KEY).length + "件、タスク " + load(TASK_KEY).length + "件";
+}
+document.getElementById("exportBtn").onclick = function () {
+  const data = { companies: load(KEY), tasks: load(TASK_KEY) };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "shukatsu-backup-" + dateString(0) + ".json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+};
+document.getElementById("importFile").onchange = function (e) {
+  const input = e.target;
+  const file = input.files[0];
+  if (!file) return;
+  const message = document.getElementById("message");
+  const reader = new FileReader();
+  reader.onload = function () {
+    try {
+      const data = JSON.parse(reader.result);
+      if (!Array.isArray(data.companies) || !Array.isArray(data.tasks)) throw new Error("形式が違います");
+      if (!confirm("今のデータを、読み込んだデータに置き換えます。よろしいですか?")) { input.value = ""; return; }
+      saveCompanies(data.companies); saveTasks(data.tasks);
+      message.textContent = "読み込みました。";
+      showCount();
+    } catch (err) {
+      message.textContent = "読み込めませんでした。バックアップのファイルを確認してください。";
+    }
+    input.value = "";
+  };
+  reader.readAsText(file);
+};
+renderNav("backup.html");
+showCount();
+</script>
+</body>
+</html>

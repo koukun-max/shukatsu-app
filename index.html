@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ホーム - 就活管理</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav id="nav"></nav>
+<h1>今日のまとめ</h1>
+<div class="stats">
+  <div class="stat"><span id="statCompanies">0</span><small>登録企業</small></div>
+  <div class="stat"><span id="statTasks">0</span><small>未完了タスク</small></div>
+  <div class="stat" id="overdueBox"><span id="statOverdue">0</span><small>期限切れ</small></div>
+</div>
+<h2>確認する企業</h2>
+<ul id="today"></ul>
+<h2>期限が近いタスク(3日以内)</h2>
+<ul id="soon"></ul>
+<script src="common.js"></script>
+<script>
+const companies = load(KEY);
+const tasks = load(TASK_KEY);
+function renderStats() {
+  const today = dateString(0);
+  const open = tasks.filter(function (t) { return !t.done; });
+  const overdue = open.filter(function (t) { return t.due && t.due < today; });
+  document.getElementById("statCompanies").textContent = companies.length;
+  document.getElementById("statTasks").textContent = open.length;
+  document.getElementById("statOverdue").textContent = overdue.length;
+  document.getElementById("overdueBox").className = overdue.length > 0 ? "stat alert" : "stat";
+}
+function renderToday() {
+  const ul = document.getElementById("today");
+  ul.innerHTML = "";
+  const today = dateString(0);
+  const due = companies.filter(function (c) { return c.check && c.check <= today; });
+  if (due.length === 0) { ul.innerHTML = "<li>今日確認する企業はありません</li>"; return; }
+  due.forEach(function (c) {
+    const li = document.createElement("li");
+    li.appendChild(document.createTextNode(c.name + "(確認日: " + c.check + ") "));
+    if (c.url) { li.appendChild(makeLink(c.url)); li.appendChild(document.createTextNode(" ")); }
+    const done = document.createElement("button");
+    done.textContent = "確認した";
+    done.onclick = function () { c.check = ""; saveCompanies(companies); renderToday(); };
+    li.appendChild(done);
+    ul.appendChild(li);
+  });
+}
+function renderSoon() {
+  const ul = document.getElementById("soon");
+  ul.innerHTML = "";
+  const limit = dateString(3);
+  const soon = tasks.filter(function (t) { return !t.done && t.due && t.due <= limit; })
+    .sort(function (a, b) { return a.due.localeCompare(b.due); });
+  if (soon.length === 0) { ul.innerHTML = "<li>期限が近いタスクはありません</li>"; return; }
+  soon.forEach(function (t) {
+    const li = document.createElement("li");
+    li.textContent = t.title + "(期限: " + t.due + ")";
+    if (t.due < dateString(0)) { li.textContent += " 期限切れ"; li.style.color = "red"; }
+    ul.appendChild(li);
+  });
+}
+renderNav("index.html");
+renderStats(); renderToday(); renderSoon();
+</script>
+</body>
+</html>

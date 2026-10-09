@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>企業 - 就活管理</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav id="nav"></nav>
+<h1>企業</h1>
+<h2>企業を追加</h2>
+<input type="text" id="name" placeholder="企業名">
+<input type="text" id="url" placeholder="採用ページのURL(任意)">
+<select id="status"><option>気になる</option><option>ES提出</option><option>面接</option><option>内定</option><option>見送り</option></select>
+<label>確認日 <input type="date" id="check"></label>
+<button id="addBtn">追加</button>
+<h2>企業一覧</h2>
+<div class="filters" id="filters"></div>
+<ul id="list"></ul>
+<script src="common.js"></script>
+<script>
+const companies = load(KEY);
+const STATUSES = ["気になる", "ES提出", "面接", "内定", "見送り"];
+const STATUS_CLASS = {"気になる":"s-interest","ES提出":"s-es","面接":"s-interview","内定":"s-offer","見送り":"s-out"};
+let currentFilter = "all";
+function statusOf(c) { return c.status || "気になる"; }
+function renderFilters() {
+  const box = document.getElementById("filters");
+  box.innerHTML = "";
+  ["all"].concat(STATUSES).forEach(function (s) {
+    const count = s === "all" ? companies.length : companies.filter(function (c) { return statusOf(c) === s; }).length;
+    const b = document.createElement("button");
+    b.textContent = (s === "all" ? "すべて" : s) + " " + count;
+    if (s === currentFilter) b.className = "on";
+    b.onclick = function () { currentFilter = s; render(); };
+    box.appendChild(b);
+  });
+}
+function render() {
+  renderFilters();
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+  if (companies.length === 0) { list.innerHTML = "<li>企業はまだ登録されていません</li>"; return; }
+  const shown = companies.filter(function (c) { return currentFilter === "all" || statusOf(c) === currentFilter; });
+  if (shown.length === 0) { list.innerHTML = "<li>この選考状況の企業はありません</li>"; return; }
+  shown.forEach(function (c) {
+    const status = statusOf(c);
+    const li = document.createElement("li");
+    const badge = document.createElement("span");
+    badge.className = "badge " + STATUS_CLASS[status];
+    badge.textContent = status;
+    li.appendChild(badge);
+    const title = document.createElement("strong");
+    title.textContent = c.name + " ";
+    li.appendChild(title);
+    if (c.url) li.appendChild(makeLink(c.url));
+    li.appendChild(document.createElement("br"));
+    li.appendChild(document.createTextNode("選考状況 "));
+    const sel = document.createElement("select");
+    STATUSES.forEach(function (s) {
+      const opt = document.createElement("option");
+      opt.textContent = s; opt.selected = (s === status);
+      sel.appendChild(opt);
+    });
+    sel.onchange = function () { c.status = sel.value; saveCompanies(companies); render(); };
+    li.appendChild(sel);
+    li.appendChild(document.createTextNode(" 確認日 "));
+    const date = document.createElement("input");
+    date.type = "date"; date.value = c.check || "";
+    date.onchange = function () { c.check = date.value; saveCompanies(companies); };
+    li.appendChild(date);
+    li.appendChild(document.createTextNode(" "));
+    const del = document.createElement("button");
+    del.textContent = "削除";
+    del.onclick = function () { companies.splice(companies.indexOf(c), 1); saveCompanies(companies); render(); };
+    li.appendChild(del);
+    const memo = document.createElement("textarea");
+    memo.rows = 3; memo.placeholder = "メモ(調べたこと、面接で聞かれたことなど)"; memo.value = c.memo || "";
+    memo.oninput = function () { c.memo = memo.value; saveCompanies(companies); };
+    li.appendChild(memo);
+    list.appendChild(li);
+  });
+}
+document.getElementById("addBtn").onclick = function () {
+  const nameInput = document.getElementById("name");
+  const urlInput = document.getElementById("url");
+  const checkInput = document.getElementById("check");
+  const name = nameInput.value.trim();
+  const url = urlInput.value.trim();
+  const status = document.getElementById("status").value;
+  if (name === "") return;
+  if (url !== "" && !/^https?:\/\//.test(url)) { alert("URLは http:// または https:// から入力してください"); return; }
+  companies.push({ name: name, url: url, status: status, check: checkInput.value, memo: "" });
+  saveCompanies(companies);
+  nameInput.value = ""; urlInput.value = ""; checkInput.value = "";
+  render();
+};
+renderNav("companies.html");
+render();
+</script>
+</body>
+</html>

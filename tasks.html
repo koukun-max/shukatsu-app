@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>タスク - 就活管理</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav id="nav"></nav>
+<h1>タスク</h1>
+<input type="text" id="taskTitle" placeholder="やること(例: ES提出)">
+<label>期限 <input type="date" id="taskDue"></label>
+<button id="taskBtn">追加</button>
+<h2>タスク一覧</h2>
+<label class="toggle"><input type="checkbox" id="hideDone" checked> 完了したタスクを隠す</label>
+<p id="note"></p>
+<ul id="taskList"></ul>
+<script src="common.js"></script>
+<script>
+const tasks = load(TASK_KEY);
+let hideDone = true;
+function renderTasks() {
+  const ul = document.getElementById("taskList");
+  ul.innerHTML = "";
+  const doneCount = tasks.filter(function (t) { return t.done; }).length;
+  document.getElementById("note").textContent =
+    hideDone && doneCount > 0 ? "完了 " + doneCount + "件を非表示にしています" : "";
+  const shown = tasks.filter(function (t) { return !(hideDone && t.done); });
+  if (shown.length === 0) {
+    ul.innerHTML = "<li>" + (tasks.length === 0 ? "タスクはありません" : "未完了のタスクはありません") + "</li>";
+    return;
+  }
+  shown.sort(function (a, b) {
+    return (a.done - b.done) || ((a.due === "") - (b.due === "")) || a.due.localeCompare(b.due);
+  });
+  shown.forEach(function (t) {
+    const li = document.createElement("li");
+    const cb = document.createElement("input");
+    cb.type = "checkbox"; cb.checked = t.done;
+    cb.onchange = function () { t.done = cb.checked; saveTasks(tasks); renderTasks(); };
+    li.appendChild(cb);
+    const span = document.createElement("span");
+    span.textContent = (t.due ? "[" + t.due + "] " : "") + t.title + " ";
+    if (t.done) span.style.textDecoration = "line-through";
+    if (!t.done && t.due && t.due < dateString(0)) span.style.color = "red";
+    li.appendChild(span);
+    const del = document.createElement("button");
+    del.textContent = "削除";
+    del.onclick = function () { tasks.splice(tasks.indexOf(t), 1); saveTasks(tasks); renderTasks(); };
+    li.appendChild(del);
+    ul.appendChild(li);
+  });
+}
+document.getElementById("hideDone").onchange = function (e) { hideDone = e.target.checked; renderTasks(); };
+document.getElementById("taskBtn").onclick = function () {
+  const titleInput = document.getElementById("taskTitle");
+  const dueInput = document.getElementById("taskDue");
+  const title = titleInput.value.trim();
+  if (title === "") return;
+  tasks.push({ title: title, due: dueInput.value, done: false });
+  saveTasks(tasks);
+  titleInput.value = ""; dueInput.value = "";
+  renderTasks();
+};
+renderNav("tasks.html");
+renderTasks();
+</script>
+</body>
+</html>
