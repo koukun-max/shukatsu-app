@@ -8,6 +8,7 @@
 </head>
 <body>
 <nav id="nav"></nav>
+<div id="app">
 <h1>タスク</h1>
 <input type="text" id="taskTitle" placeholder="やること(例: ES提出)">
 <label>期限 <input type="date" id="taskDue"></label>
@@ -16,9 +17,9 @@
 <label class="toggle"><input type="checkbox" id="hideDone" checked> 完了したタスクを隠す</label>
 <p id="note"></p>
 <ul id="taskList"></ul>
-<script src="common.js"></script>
-<script>
-const tasks = load(TASK_KEY);
+</div>
+<script type="module">
+import { start, tasks, saveTasks, dateString } from "./common.js";
 let hideDone = true;
 function renderTasks() {
   const ul = document.getElementById("taskList");
@@ -38,7 +39,7 @@ function renderTasks() {
     const li = document.createElement("li");
     const cb = document.createElement("input");
     cb.type = "checkbox"; cb.checked = t.done;
-    cb.onchange = function () { t.done = cb.checked; saveTasks(tasks); renderTasks(); };
+    cb.onchange = function () { t.done = cb.checked; saveTasks(); renderTasks(); };
     li.appendChild(cb);
     const span = document.createElement("span");
     span.textContent = (t.due ? "[" + t.due + "] " : "") + t.title + " ";
@@ -47,7 +48,7 @@ function renderTasks() {
     li.appendChild(span);
     const del = document.createElement("button");
     del.textContent = "削除";
-    del.onclick = function () { tasks.splice(tasks.indexOf(t), 1); saveTasks(tasks); renderTasks(); };
+    del.onclick = function () { tasks.splice(tasks.indexOf(t), 1); saveTasks(); renderTasks(); };
     li.appendChild(del);
     ul.appendChild(li);
   });
@@ -59,12 +60,11 @@ document.getElementById("taskBtn").onclick = function () {
   const title = titleInput.value.trim();
   if (title === "") return;
   tasks.push({ title: title, due: dueInput.value, done: false });
-  saveTasks(tasks);
+  saveTasks();
   titleInput.value = ""; dueInput.value = "";
   renderTasks();
 };
-renderNav("tasks.html");
-renderTasks();
+start("tasks.html", renderTasks);
 </script>
 </body>
 </html>

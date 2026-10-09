@@ -8,6 +8,7 @@
 </head>
 <body>
 <nav id="nav"></nav>
+<div id="app">
 <h1>企業</h1>
 <h2>企業を追加</h2>
 <input type="text" id="name" placeholder="企業名">
@@ -18,9 +19,9 @@
 <h2>企業一覧</h2>
 <div class="filters" id="filters"></div>
 <ul id="list"></ul>
-<script src="common.js"></script>
-<script>
-const companies = load(KEY);
+</div>
+<script type="module">
+import { start, companies, saveCompanies, makeLink } from "./common.js";
 const STATUSES = ["気になる", "ES提出", "面接", "内定", "見送り"];
 const STATUS_CLASS = {"気になる":"s-interest","ES提出":"s-es","面接":"s-interview","内定":"s-offer","見送り":"s-out"};
 let currentFilter = "all";
@@ -63,21 +64,21 @@ function render() {
       opt.textContent = s; opt.selected = (s === status);
       sel.appendChild(opt);
     });
-    sel.onchange = function () { c.status = sel.value; saveCompanies(companies); render(); };
+    sel.onchange = function () { c.status = sel.value; saveCompanies(); render(); };
     li.appendChild(sel);
     li.appendChild(document.createTextNode(" 確認日 "));
     const date = document.createElement("input");
     date.type = "date"; date.value = c.check || "";
-    date.onchange = function () { c.check = date.value; saveCompanies(companies); };
+    date.onchange = function () { c.check = date.value; saveCompanies(); };
     li.appendChild(date);
     li.appendChild(document.createTextNode(" "));
     const del = document.createElement("button");
     del.textContent = "削除";
-    del.onclick = function () { companies.splice(companies.indexOf(c), 1); saveCompanies(companies); render(); };
+    del.onclick = function () { companies.splice(companies.indexOf(c), 1); saveCompanies(); render(); };
     li.appendChild(del);
     const memo = document.createElement("textarea");
     memo.rows = 3; memo.placeholder = "メモ(調べたこと、面接で聞かれたことなど)"; memo.value = c.memo || "";
-    memo.oninput = function () { c.memo = memo.value; saveCompanies(companies); };
+    memo.oninput = function () { c.memo = memo.value; saveCompanies(); };
     li.appendChild(memo);
     list.appendChild(li);
   });
@@ -92,12 +93,11 @@ document.getElementById("addBtn").onclick = function () {
   if (name === "") return;
   if (url !== "" && !/^https?:\/\//.test(url)) { alert("URLは http:// または https:// から入力してください"); return; }
   companies.push({ name: name, url: url, status: status, check: checkInput.value, memo: "" });
-  saveCompanies(companies);
+  saveCompanies();
   nameInput.value = ""; urlInput.value = ""; checkInput.value = "";
   render();
 };
-renderNav("companies.html");
-render();
+start("companies.html", render);
 </script>
 </body>
 </html>

@@ -8,6 +8,7 @@
 </head>
 <body>
 <nav id="nav"></nav>
+<div id="app">
 <h1>今日のまとめ</h1>
 <div class="stats">
   <div class="stat"><span id="statCompanies">0</span><small>登録企業</small></div>
@@ -18,10 +19,9 @@
 <ul id="today"></ul>
 <h2>期限が近いタスク(3日以内)</h2>
 <ul id="soon"></ul>
-<script src="common.js"></script>
-<script>
-const companies = load(KEY);
-const tasks = load(TASK_KEY);
+</div>
+<script type="module">
+import { start, companies, tasks, saveCompanies, dateString, makeLink } from "./common.js";
 function renderStats() {
   const today = dateString(0);
   const open = tasks.filter(function (t) { return !t.done; });
@@ -43,7 +43,7 @@ function renderToday() {
     if (c.url) { li.appendChild(makeLink(c.url)); li.appendChild(document.createTextNode(" ")); }
     const done = document.createElement("button");
     done.textContent = "確認した";
-    done.onclick = function () { c.check = ""; saveCompanies(companies); renderToday(); };
+    done.onclick = function () { c.check = ""; saveCompanies(); renderToday(); };
     li.appendChild(done);
     ul.appendChild(li);
   });
@@ -62,8 +62,7 @@ function renderSoon() {
     ul.appendChild(li);
   });
 }
-renderNav("index.html");
-renderStats(); renderToday(); renderSoon();
+start("index.html", function () { renderStats(); renderToday(); renderSoon(); });
 </script>
 </body>
 </html>

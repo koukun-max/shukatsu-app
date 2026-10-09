@@ -8,23 +8,25 @@
 </head>
 <body>
 <nav id="nav"></nav>
+<div id="app">
 <h1>バックアップ</h1>
 <p id="count"></p>
 <h2>書き出す</h2>
 <p>今のデータを、ファイルとして保存します。</p>
 <button id="exportBtn">書き出す(バックアップ)</button>
 <h2>読み込む</h2>
-<p>書き出したファイルから、データを復元します。今のデータは置き換わります。</p>
+<p>書き出したファイルから、データを復元します。今のデータは置き換わります。以前の端末で書き出したファイルも読み込めます。</p>
 <input type="file" id="importFile" accept=".json">
 <p id="message"></p>
-<script src="common.js"></script>
-<script>
+</div>
+<script type="module">
+import { start, companies, tasks, saveNow, dateString } from "./common.js";
 function showCount() {
   document.getElementById("count").textContent =
-    "現在のデータ: 企業 " + load(KEY).length + "件、タスク " + load(TASK_KEY).length + "件";
+    "現在のデータ: 企業 " + companies.length + "件、タスク " + tasks.length + "件";
 }
 document.getElementById("exportBtn").onclick = function () {
-  const data = { companies: load(KEY), tasks: load(TASK_KEY) };
+  const data = { companies: companies, tasks: tasks };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -38,12 +40,14 @@ document.getElementById("importFile").onchange = function (e) {
   if (!file) return;
   const message = document.getElementById("message");
   const reader = new FileReader();
-  reader.onload = function () {
+  reader.onload = async function () {
     try {
       const data = JSON.parse(reader.result);
       if (!Array.isArray(data.companies) || !Array.isArray(data.tasks)) throw new Error("形式が違います");
       if (!confirm("今のデータを、読み込んだデータに置き換えます。よろしいですか?")) { input.value = ""; return; }
-      saveCompanies(data.companies); saveTasks(data.tasks);
+      companies.splice(0, companies.length, ...data.companies);
+      tasks.splice(0, tasks.length, ...data.tasks);
+      await saveNow();
       message.textContent = "読み込みました。";
       showCount();
     } catch (err) {
@@ -53,8 +57,7 @@ document.getElementById("importFile").onchange = function (e) {
   };
   reader.readAsText(file);
 };
-renderNav("backup.html");
-showCount();
+start("backup.html", showCount);
 </script>
 </body>
 </html>
