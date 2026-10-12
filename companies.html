@@ -21,7 +21,7 @@
 <ul id="list"></ul>
 </div>
 <script type="module">
-import { start, companies, tasks, saveCompanies, saveTasks, makeLink, newId } from "./common.js";
+import { start, companies, tasks, saveCompanies, saveTasks, saveSoon, makeLink, newId } from "./common.js";
 const STATUSES = ["気になる", "ES提出", "面接", "内定", "見送り"];
 const STATUS_CLASS = {"気になる":"s-interest","ES提出":"s-es","面接":"s-interview","内定":"s-offer","見送り":"s-out"};
 let currentFilter = "all";
@@ -124,7 +124,7 @@ function render() {
     li.appendChild(del);
     const memo = document.createElement("textarea");
     memo.rows = 3; memo.placeholder = "メモ(調べたこと、面接で聞かれたことなど)"; memo.value = c.memo || "";
-    memo.oninput = function () { c.memo = memo.value; saveCompanies(); };
+    memo.oninput = function () { c.memo = memo.value; saveSoon(); };
     li.appendChild(memo);
     li.appendChild(taskBlock(c));
     list.appendChild(li);
