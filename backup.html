@@ -20,7 +20,7 @@
 <p id="message"></p>
 </div>
 <script type="module">
-import { start, companies, tasks, saveNow, dateString } from "./common.js";
+import { start, companies, tasks, saveNow, dateString, ensureIds } from "./common.js";
 function showCount() {
   document.getElementById("count").textContent =
     "現在のデータ: 企業 " + companies.length + "件、タスク " + tasks.length + "件";
@@ -47,6 +47,7 @@ document.getElementById("importFile").onchange = function (e) {
       if (!confirm("今のデータを、読み込んだデータに置き換えます。よろしいですか?")) { input.value = ""; return; }
       companies.splice(0, companies.length, ...data.companies);
       tasks.splice(0, tasks.length, ...data.tasks);
+      ensureIds();
       await saveNow();
       message.textContent = "読み込みました。";
       showCount();

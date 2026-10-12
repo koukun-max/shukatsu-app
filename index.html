@@ -51,7 +51,7 @@
 <ul id="today"></ul>
 
 <!-- 期限が近いタスク -->
-<h2>期限が近いタスク(3日以内)</h2>
+<h2>期限が近いタスク（3日以内）</h2>
 <ul id="soon"></ul>
 
 </div>
@@ -64,12 +64,16 @@ import {
   tasks,
   saveCompanies,
   dateString,
-  makeLink
+  makeLink,
+  companyName
 } from "./common.js";
 
 import { refreshCalendar } from "./calendar.js";
 
+// =====================================
 // 統計情報を表示
+// =====================================
+
 function renderStats() {
   const today = dateString(0);
 
@@ -92,7 +96,10 @@ function renderStats() {
     overdue.length > 0 ? "stat alert" : "stat";
 }
 
+// =====================================
 // 確認する企業を表示
+// =====================================
+
 function renderToday() {
   const ul = document.getElementById("today");
   ul.replaceChildren();
@@ -104,17 +111,20 @@ function renderToday() {
   );
 
   if (due.length === 0) {
-    ul.innerHTML =
-      "<li>今日確認する企業はありません</li>";
+    const li = document.createElement("li");
+    li.textContent = "今日確認する企業はありません";
+    ul.appendChild(li);
     return;
   }
 
   due.forEach(c => {
     const li = document.createElement("li");
 
-    li.appendChild(document.createTextNode(
-      c.name + "(確認日: " + c.check + ") "
-    ));
+    li.appendChild(
+      document.createTextNode(
+        c.name + "（確認日: " + c.check + "） "
+      )
+    );
 
     if (c.url) {
       li.appendChild(makeLink(c.url));
@@ -122,12 +132,14 @@ function renderToday() {
     }
 
     const done = document.createElement("button");
+    done.type = "button";
     done.textContent = "確認した";
 
     done.onclick = function () {
       c.check = "";
       saveCompanies();
       renderToday();
+      refreshCalendar();
     };
 
     li.appendChild(done);
@@ -135,30 +147,44 @@ function renderToday() {
   });
 }
 
+// =====================================
 // 期限が近いタスクを表示
+// =====================================
+
 function renderSoon() {
   const ul = document.getElementById("soon");
   ul.replaceChildren();
 
+  const today = dateString(0);
   const limit = dateString(3);
 
-  const soon = tasks.filter(
-    t => !t.done && t.due && t.due <= limit
-  ).sort((a, b) => a.due.localeCompare(b.due));
+  const soon = tasks
+    .filter(t => !t.done && t.due && t.due <= limit)
+    .sort((a, b) => a.due.localeCompare(b.due));
 
   if (soon.length === 0) {
-    ul.innerHTML =
-      "<li>期限が近いタスクはありません</li>";
+    const li = document.createElement("li");
+    li.textContent = "期限が近いタスクはありません";
+    ul.appendChild(li);
     return;
   }
 
   soon.forEach(t => {
     const li = document.createElement("li");
 
-    li.textContent =
-      t.title + "(期限: " + t.due + ")";
+    // 友達が追加した企業名表示を残す
+    const company = companyName(t.companyId);
 
-    if (t.due < dateString(0)) {
+    const prefix = company
+      ? "[" + company + "] "
+      : "";
+
+    li.textContent =
+      prefix +
+      t.title +
+      "（期限: " + t.due + "）";
+
+    if (t.due < today) {
       li.textContent += " 期限切れ";
       li.style.color = "red";
     }
@@ -167,16 +193,17 @@ function renderSoon() {
   });
 }
 
+// =====================================
 // Firebaseの読み込み完了後に実行
-start("index.html", function () {
+// =====================================
 
+start("index.html", function () {
   renderStats();
   renderToday();
   renderSoon();
 
-  // Pythonにタスクを送信してカレンダーを更新
+  // Pythonと連携してカレンダーを更新
   refreshCalendar();
-
 });
 
 </script>

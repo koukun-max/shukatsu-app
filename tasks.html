@@ -12,24 +12,52 @@
 <h1>タスク</h1>
 <input type="text" id="taskTitle" placeholder="やること(例: ES提出)">
 <label>期限 <input type="date" id="taskDue"></label>
+<label>企業 <select id="taskCompany"></select></label>
 <button id="taskBtn">追加</button>
 <h2>タスク一覧</h2>
+<label>表示する企業 <select id="filterCompany"></select></label>
 <label class="toggle"><input type="checkbox" id="hideDone" checked> 完了したタスクを隠す</label>
 <p id="note"></p>
 <ul id="taskList"></ul>
 </div>
 <script type="module">
-import { start, tasks, saveTasks, dateString } from "./common.js";
+import { start, tasks, companies, saveTasks, dateString, companyName } from "./common.js";
 let hideDone = true;
+let filter = "all";
+function opt(v, t) { const o = document.createElement("option"); o.value = v; o.textContent = t; return o; }
+function companySelect(current, onchange) {
+  const sel = document.createElement("select");
+  sel.className = "co-select";
+  sel.appendChild(opt("", "企業なし"));
+  companies.forEach(function (c) { sel.appendChild(opt(c.id, c.name)); });
+  sel.value = companyName(current) ? current : "";
+  sel.onchange = function () { onchange(sel.value); };
+  return sel;
+}
+function fillSelects() {
+  const add = document.getElementById("taskCompany");
+  const fil = document.getElementById("filterCompany");
+  add.innerHTML = ""; fil.innerHTML = "";
+  add.appendChild(opt("", "企業なし"));
+  fil.appendChild(opt("all", "すべて")); fil.appendChild(opt("none", "企業なし"));
+  companies.forEach(function (c) { add.appendChild(opt(c.id, c.name)); fil.appendChild(opt(c.id, c.name)); });
+  fil.value = filter;
+}
+function matchFilter(t) {
+  if (filter === "all") return true;
+  if (filter === "none") return !companyName(t.companyId);
+  return t.companyId === filter;
+}
 function renderTasks() {
   const ul = document.getElementById("taskList");
   ul.innerHTML = "";
-  const doneCount = tasks.filter(function (t) { return t.done; }).length;
+  const base = tasks.filter(matchFilter);
+  const doneCount = base.filter(function (t) { return t.done; }).length;
   document.getElementById("note").textContent =
     hideDone && doneCount > 0 ? "完了 " + doneCount + "件を非表示にしています" : "";
-  const shown = tasks.filter(function (t) { return !(hideDone && t.done); });
+  const shown = base.filter(function (t) { return !(hideDone && t.done); });
   if (shown.length === 0) {
-    ul.innerHTML = "<li>" + (tasks.length === 0 ? "タスクはありません" : "未完了のタスクはありません") + "</li>";
+    ul.innerHTML = "<li>" + (tasks.length === 0 ? "タスクはありません" : "表示するタスクはありません") + "</li>";
     return;
   }
   shown.sort(function (a, b) {
@@ -46,6 +74,8 @@ function renderTasks() {
     if (t.done) span.style.textDecoration = "line-through";
     if (!t.done && t.due && t.due < dateString(0)) span.style.color = "red";
     li.appendChild(span);
+    li.appendChild(companySelect(t.companyId, function (v) { t.companyId = v; saveTasks(); renderTasks(); }));
+    li.appendChild(document.createTextNode(" "));
     const del = document.createElement("button");
     del.textContent = "削除";
     del.onclick = function () { tasks.splice(tasks.indexOf(t), 1); saveTasks(); renderTasks(); };
@@ -54,17 +84,18 @@ function renderTasks() {
   });
 }
 document.getElementById("hideDone").onchange = function (e) { hideDone = e.target.checked; renderTasks(); };
+document.getElementById("filterCompany").onchange = function (e) { filter = e.target.value; renderTasks(); };
 document.getElementById("taskBtn").onclick = function () {
   const titleInput = document.getElementById("taskTitle");
   const dueInput = document.getElementById("taskDue");
   const title = titleInput.value.trim();
   if (title === "") return;
-  tasks.push({ title: title, due: dueInput.value, done: false });
+  tasks.push({ title: title, due: dueInput.value, done: false, companyId: document.getElementById("taskCompany").value });
   saveTasks();
   titleInput.value = ""; dueInput.value = "";
   renderTasks();
 };
-start("tasks.html", renderTasks);
+start("tasks.html", function () { fillSelects(); renderTasks(); });
 </script>
 </body>
 </html>
