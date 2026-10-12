@@ -38,3 +38,78 @@ a{color:var(--accent)}
 .status{color:var(--sub);font-size:.85rem;margin-right:8px}
 button.small{min-height:32px;padding:4px 12px;background:var(--card);color:var(--text);border:1px solid var(--line)}
 #login{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+/* 就活カレンダー */
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 15px 0;
+}
+
+.calendar {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.calendar-day {
+  min-height: 65px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+}
+
+.calendar-day:hover {
+  background: #e8f1ff;
+}
+
+.calendar-day.has-event {
+  background: #fff1d6;
+  border-color: #f0a040;
+}
+
+.calendar-day small {
+  display: block;
+  font-size: 11px;
+  color: #d97706;
+}
+
+.calendar-weekday {
+  text-align: center;
+  font-weight: bold;
+  padding: 8px 0;
+}
+
+.calendar-empty {
+  min-height: 65px;
+}
+
+@media (max-width: 600px) {
+  .calendar-day,
+  .calendar-empty {
+    min-height: 48px;
+  }
+}
+.preparation-box label {
+  display: block;
+  margin: 8px 0;
+}
+
+.preparation-box input[type="checkbox"] {
+  width: auto;
+}
+
+/* hidden属性が確実に機能するようにする */
+.preparation-box[hidden],
+.preparation-box input[hidden] {
+  display: none;
+}
+
+/* スマホでは縦並び */
+@media (max-width: 600px) {
+  .event-form-row {
+    flex-direction: column;
+  }
+}
