@@ -6,63 +6,208 @@
 <title>ホーム - 就活管理</title>
 <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
+
 <nav id="nav"></nav>
+
 <div id="app">
+
 <h1>今日のまとめ</h1>
+
 <div class="stats">
-  <div class="stat"><span id="statCompanies">0</span><small>登録企業</small></div>
-  <div class="stat"><span id="statTasks">0</span><small>未完了タスク</small></div>
-  <div class="stat" id="overdueBox"><span id="statOverdue">0</span><small>期限切れ</small></div>
+  <div class="stat">
+    <span id="statCompanies">0</span>
+    <small>登録企業</small>
+  </div>
+
+  <div class="stat">
+    <span id="statTasks">0</span>
+    <small>未完了タスク</small>
+  </div>
+
+  <div class="stat" id="overdueBox">
+    <span id="statOverdue">0</span>
+    <small>期限切れ</small>
+  </div>
 </div>
+
+<!-- 就活カレンダー -->
+<h2>就活カレンダー</h2>
+
+<div class="calendar-header">
+  <button id="prevMonth">◀ 前月</button>
+  <h3 id="calendarTitle"></h3>
+  <button id="nextMonth">翌月 ▶</button>
+</div>
+
+<div id="calendar" class="calendar"></div>
+
+<h3>選択した日の予定</h3>
+<ul id="calendarEvents"></ul>
+
+<!-- 企業確認 -->
 <h2>確認する企業</h2>
 <ul id="today"></ul>
-<h2>期限が近いタスク(3日以内)</h2>
+
+<!-- 期限が近いタスク -->
+<h2>期限が近いタスク（3日以内）</h2>
 <ul id="soon"></ul>
+
 </div>
+
 <script type="module">
-import { start, companies, tasks, saveCompanies, dateString, makeLink, companyName } from "./common.js";
+
+import {
+  start,
+  companies,
+  tasks,
+  saveCompanies,
+  dateString,
+  makeLink,
+  companyName
+} from "./common.js";
+
+import { refreshCalendar } from "./calendar.js";
+
+// =====================================
+// 統計情報を表示
+// =====================================
+
 function renderStats() {
   const today = dateString(0);
-  const open = tasks.filter(function (t) { return !t.done; });
-  const overdue = open.filter(function (t) { return t.due && t.due < today; });
-  document.getElementById("statCompanies").textContent = companies.length;
-  document.getElementById("statTasks").textContent = open.length;
-  document.getElementById("statOverdue").textContent = overdue.length;
-  document.getElementById("overdueBox").className = overdue.length > 0 ? "stat alert" : "stat";
+
+  const open = tasks.filter(t => !t.done);
+
+  const overdue = open.filter(
+    t => t.due && t.due < today
+  );
+
+  document.getElementById("statCompanies").textContent =
+    companies.length;
+
+  document.getElementById("statTasks").textContent =
+    open.length;
+
+  document.getElementById("statOverdue").textContent =
+    overdue.length;
+
+  document.getElementById("overdueBox").className =
+    overdue.length > 0 ? "stat alert" : "stat";
 }
+
+// =====================================
+// 確認する企業を表示
+// =====================================
+
 function renderToday() {
   const ul = document.getElementById("today");
-  ul.innerHTML = "";
+  ul.replaceChildren();
+
   const today = dateString(0);
-  const due = companies.filter(function (c) { return c.check && c.check <= today; });
-  if (due.length === 0) { ul.innerHTML = "<li>今日確認する企業はありません</li>"; return; }
-  due.forEach(function (c) {
+
+  const due = companies.filter(
+    c => c.check && c.check <= today
+  );
+
+  if (due.length === 0) {
     const li = document.createElement("li");
-    li.appendChild(document.createTextNode(c.name + "(確認日: " + c.check + ") "));
-    if (c.url) { li.appendChild(makeLink(c.url)); li.appendChild(document.createTextNode(" ")); }
+    li.textContent = "今日確認する企業はありません";
+    ul.appendChild(li);
+    return;
+  }
+
+  due.forEach(c => {
+    const li = document.createElement("li");
+
+    li.appendChild(
+      document.createTextNode(
+        c.name + "（確認日: " + c.check + "） "
+      )
+    );
+
+    if (c.url) {
+      li.appendChild(makeLink(c.url));
+      li.appendChild(document.createTextNode(" "));
+    }
+
     const done = document.createElement("button");
+    done.type = "button";
     done.textContent = "確認した";
-    done.onclick = function () { c.check = ""; saveCompanies(); renderToday(); };
+
+    done.onclick = function () {
+      c.check = "";
+      saveCompanies();
+      renderToday();
+      refreshCalendar();
+    };
+
     li.appendChild(done);
     ul.appendChild(li);
   });
 }
+
+// =====================================
+// 期限が近いタスクを表示
+// =====================================
+
 function renderSoon() {
   const ul = document.getElementById("soon");
-  ul.innerHTML = "";
+  ul.replaceChildren();
+
+  const today = dateString(0);
   const limit = dateString(3);
-  const soon = tasks.filter(function (t) { return !t.done && t.due && t.due <= limit; })
-    .sort(function (a, b) { return a.due.localeCompare(b.due); });
-  if (soon.length === 0) { ul.innerHTML = "<li>期限が近いタスクはありません</li>"; return; }
-  soon.forEach(function (t) {
+
+  const soon = tasks
+    .filter(t => !t.done && t.due && t.due <= limit)
+    .sort((a, b) => a.due.localeCompare(b.due));
+
+  if (soon.length === 0) {
     const li = document.createElement("li");
-    li.textContent = (companyName(t.companyId) ? "[" + companyName(t.companyId) + "] " : "") + t.title + "(期限: " + t.due + ")";
-    if (t.due < dateString(0)) { li.textContent += " 期限切れ"; li.style.color = "red"; }
+    li.textContent = "期限が近いタスクはありません";
+    ul.appendChild(li);
+    return;
+  }
+
+  soon.forEach(t => {
+    const li = document.createElement("li");
+
+    // 友達が追加した企業名表示を残す
+    const company = companyName(t.companyId);
+
+    const prefix = company
+      ? "[" + company + "] "
+      : "";
+
+    li.textContent =
+      prefix +
+      t.title +
+      "（期限: " + t.due + "）";
+
+    if (t.due < today) {
+      li.textContent += " 期限切れ";
+      li.style.color = "red";
+    }
+
     ul.appendChild(li);
   });
 }
-start("index.html", function () { renderStats(); renderToday(); renderSoon(); });
+
+// =====================================
+// Firebaseの読み込み完了後に実行
+// =====================================
+
+start("index.html", function () {
+  renderStats();
+  renderToday();
+  renderSoon();
+
+  // Pythonと連携してカレンダーを更新
+  refreshCalendar();
+});
+
 </script>
+
 </body>
 </html>
+

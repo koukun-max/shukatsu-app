@@ -1,60 +1,551 @@
-:root{--bg:#f3f5f2;--card:#fff;--text:#1d2a27;--sub:#6b7a76;--line:#dde3df;--accent:#1f6f5c}
-@media (prefers-color-scheme:dark){:root{--bg:#14201d;--card:#1c2b27;--text:#e8efec;--sub:#92a39d;--line:#2d3f3a;--accent:#4fb89c}}
-*{box-sizing:border-box}
-body{max-width:720px;margin:0 auto;padding:16px;font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif;background:var(--bg);color:var(--text);line-height:1.7}
-nav{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px}
-nav a{padding:8px 14px;border-radius:999px;background:var(--card);border:1px solid var(--line);color:var(--text);text-decoration:none}
-nav a.current{background:var(--accent);border-color:var(--accent);color:#fff}
-h1{font-size:1.6rem;margin:8px 0 16px}
-h2{font-size:1.1rem;margin:28px 0 10px;padding-bottom:4px;border-bottom:2px solid var(--accent)}
-p{color:var(--sub)}
-ul{list-style:none;padding:0;margin:0}
-li{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
-input[type=text],input[type=date],select,textarea{font:inherit;font-size:16px;color:var(--text);background:var(--card);padding:10px 12px;border:1px solid var(--line);border-radius:8px;margin:3px 0}
-textarea{width:100%;margin-top:10px}
-button{font:inherit;min-height:40px;padding:8px 16px;border:0;border-radius:8px;background:var(--accent);color:#fff;cursor:pointer}
-button:hover{opacity:.85}
-input[type=checkbox]{width:20px;height:20px;margin-right:8px;vertical-align:middle;accent-color:var(--accent)}
-a{color:var(--accent)}
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-@media (max-width:600px){body{padding:12px}input[type=text],select{width:100%}#addBtn,#taskBtn{width:100%;margin-top:6px}li button{margin-top:6px}}
-.stats{display:flex;gap:10px;margin-bottom:8px}
-.stat{flex:1;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center}
-.stat span{display:block;font-size:1.6rem;font-weight:600}
-.stat small{color:var(--sub)}
-.stat.alert span{color:#c2412d}
-.badge{display:inline-block;padding:2px 10px;margin-right:6px;border-radius:999px;font-size:.8rem;font-weight:600}
-.s-interest{background:#e3e7e5;color:#3a4744}
-.s-es{background:#faeeda;color:#633806}
-.s-interview{background:#dbe9f7;color:#0c447c}
-.s-offer{background:#d6efdf;color:#1d5a37}
-.s-out{background:#f7d9d4;color:#8a2d1d}
-.filters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
-.filters button{min-height:32px;padding:4px 12px;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:999px;font-size:.9rem}
-.filters button.on{background:var(--accent);border-color:var(--accent);color:#fff}
-.toggle{display:block;margin-bottom:6px}
-[hidden]{display:none!important}
-#userbox{margin-left:auto;display:flex;align-items:center}
-.status{color:var(--sub);font-size:.85rem;margin-right:8px}
-button.small{min-height:32px;padding:4px 12px;background:var(--card);color:var(--text);border:1px solid var(--line)}
-#login{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
-.cal-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
-.cal-head strong{flex:1;text-align:center;font-size:1.1rem}
-.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
-.cal .wd{text-align:center;font-size:.8rem;color:var(--sub)}
-.cal .blank{min-height:56px}
-.cal button.day{min-height:56px;padding:4px;display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:8px}
-.cal button.day.today{border:2px solid var(--accent)}
-.cal button.day.sel{background:var(--accent);color:#fff}
-.dots{display:flex;gap:3px;flex-wrap:wrap;justify-content:center}
-.dot{display:inline-block;width:8px;height:8px;border-radius:50%}
-.dot.t{background:#1f6f5c}.dot.c{background:#2b6cb0}.dot.o{background:#c2412d}.dot.d{background:#9aa5a1}
-.sel .dot{outline:1px solid #fff}
-.legend{font-size:.85rem;color:var(--sub)}
-.tag{display:inline-block;font-size:.75rem;padding:1px 8px;margin-right:6px;border-radius:999px;color:#fff}
-.tag.t{background:#1f6f5c}.tag.c{background:#2b6cb0}.tag.o{background:#c2412d}.tag.d{background:#9aa5a1}
-.linked{margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)}
-.linked small{color:var(--sub);display:block;margin-bottom:6px}
-.linked .row{display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap}
-.linked .row input[type=text]{flex:1;min-width:140px}
-.co-select{font-size:.85rem;padding:4px 8px;margin-left:4px}
+
+:root {
+  --bg: #f3f5f2;
+  --card: #fff;
+  --text: #1d2a27;
+  --sub: #6b7a76;
+  --line: #dde3df;
+  --accent: #1f6f5c;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14201d;
+    --card: #1c2b27;
+    --text: #e8efec;
+    --sub: #92a39d;
+    --line: #2d3f3a;
+    --accent: #4fb89c;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px;
+  font-family: "Hiragino Sans", "Noto Sans JP", "Yu Gothic", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+}
+
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+
+nav a {
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--text);
+  text-decoration: none;
+}
+
+nav a.current {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+h1 {
+  font-size: 1.6rem;
+  margin: 8px 0 16px;
+}
+
+h2 {
+  font-size: 1.1rem;
+  margin: 28px 0 10px;
+  padding-bottom: 4px;
+  border-bottom: 2px solid var(--accent);
+}
+
+p {
+  color: var(--sub);
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+li {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .04);
+}
+
+input[type="text"],
+input[type="date"],
+select,
+textarea {
+  font: inherit;
+  font-size: 16px;
+  color: var(--text);
+  background: var(--card);
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  margin: 3px 0;
+}
+
+textarea {
+  width: 100%;
+  margin-top: 10px;
+}
+
+button {
+  font: inherit;
+  min-height: 40px;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+
+button:hover {
+  opacity: .85;
+}
+
+input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  margin-right: 8px;
+  vertical-align: middle;
+  accent-color: var(--accent);
+}
+
+a {
+  color: var(--accent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 600px) {
+  body {
+    padding: 12px;
+  }
+
+  input[type="text"],
+  select {
+    width: 100%;
+  }
+
+  #addBtn,
+  #taskBtn {
+    width: 100%;
+    margin-top: 6px;
+  }
+
+  li button {
+    margin-top: 6px;
+  }
+}
+
+/* ホーム画面の統計 */
+
+.stats {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.stat {
+  flex: 1;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+}
+
+.stat span {
+  display: block;
+  font-size: 1.6rem;
+  font-weight: 600;
+}
+
+.stat small {
+  color: var(--sub);
+}
+
+.stat.alert span {
+  color: #c2412d;
+}
+
+/* 企業の選考ステータス */
+
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  margin-right: 6px;
+  border-radius: 999px;
+  font-size: .8rem;
+  font-weight: 600;
+}
+
+.s-interest {
+  background: #e3e7e5;
+  color: #3a4744;
+}
+
+.s-es {
+  background: #faeeda;
+  color: #633806;
+}
+
+.s-interview {
+  background: #dbe9f7;
+  color: #0c447c;
+}
+
+.s-offer {
+  background: #d6efdf;
+  color: #1d5a37;
+}
+
+.s-out {
+  background: #f7d9d4;
+  color: #8a2d1d;
+}
+
+/* フィルター */
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.filters button {
+  min-height: 32px;
+  padding: 4px 12px;
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: .9rem;
+}
+
+.filters button.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.toggle {
+  display: block;
+  margin-bottom: 6px;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+#userbox {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
+.status {
+  color: var(--sub);
+  font-size: .85rem;
+  margin-right: 8px;
+}
+
+button.small {
+  min-height: 32px;
+  padding: 4px 12px;
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+
+#login {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+/* =====================================
+   ホーム画面の就活カレンダー
+===================================== */
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin: 15px 0;
+}
+
+.calendar-header h3 {
+  margin: 0;
+  text-align: center;
+}
+
+.calendar-header button {
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+.calendar {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.calendar-day {
+  min-width: 0;
+  min-height: 65px;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.calendar-day:hover {
+  background: #e8f1ff;
+  color: #111827;
+}
+
+.calendar-day.has-event {
+  border-color: #f0a040;
+}
+
+.calendar-day small {
+  display: block;
+  font-size: 11px;
+  color: #d97706;
+}
+
+.calendar-weekday {
+  text-align: center;
+  font-weight: bold;
+  padding: 8px 0;
+}
+
+.calendar-empty {
+  min-height: 65px;
+}
+
+@media (max-width: 600px) {
+  .calendar {
+    gap: 3px;
+  }
+
+  .calendar-day,
+  .calendar-empty {
+    min-height: 48px;
+  }
+
+  .calendar-day {
+    padding: 3px;
+    font-size: 12px;
+  }
+
+  .calendar-header button {
+    padding: 6px;
+    font-size: 11px;
+  }
+}
+
+/* =====================================
+   カレンダー専用ページ
+===================================== */
+
+.cal-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.cal-head strong {
+  flex: 1;
+  text-align: center;
+  font-size: 1.1rem;
+}
+
+.cal {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.cal .wd {
+  text-align: center;
+  font-size: .8rem;
+  color: var(--sub);
+}
+
+.cal .blank {
+  min-height: 56px;
+}
+
+.cal button.day {
+  min-width: 0;
+  min-height: 56px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.cal button.day.today {
+  border: 2px solid var(--accent);
+}
+
+.cal button.day.sel {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.dots {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.dot.t {
+  background: #1f6f5c;
+}
+
+.dot.c {
+  background: #2b6cb0;
+}
+
+.dot.o {
+  background: #c2412d;
+}
+
+.dot.d {
+  background: #9aa5a1;
+}
+
+.sel .dot {
+  outline: 1px solid #fff;
+}
+
+.legend {
+  font-size: .85rem;
+  color: var(--sub);
+}
+
+.tag {
+  display: inline-block;
+  font-size: .75rem;
+  padding: 1px 8px;
+  margin-right: 6px;
+  border-radius: 999px;
+  color: #fff;
+}
+
+.tag.t {
+  background: #1f6f5c;
+}
+
+.tag.c {
+  background: #2b6cb0;
+}
+
+.tag.o {
+  background: #c2412d;
+}
+
+.tag.d {
+  background: #9aa5a1;
+}
+
+/* =====================================
+   予定追加・編集フォーム
+===================================== */
+
+.preparation-box label {
+  display: block;
+  margin: 8px 0;
+}
+
+.preparation-box input[type="checkbox"] {
+  width: auto;
+}
+
+.preparation-box[hidden],
+.preparation-box input[hidden] {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .event-form-row {
+    flex-direction: column;
+  }
+}
+
+/* =====================================
+   友達が追加した企業・タスク連携
+===================================== */
+
+.linked {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+}
+
+.linked small {
+  color: var(--sub);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.linked .row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.linked .row input[type="text"] {
+  flex: 1;
+  min-width: 140px;
+}
+
+.co-select {
+  font-size: .85rem;
+  padding: 4px 8px;
+  margin-left: 4px;
+}

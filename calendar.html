@@ -5,116 +5,842 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>カレンダー - 就活管理</title>
 <link rel="stylesheet" href="style.css">
+
+<style>
+/* カレンダー本体 */
+.cal {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 16px;
+}
+.cal .wd {
+  text-align: center;
+  font-weight: bold;
+  padding: 8px 0;
+  color: var(--text);
+}
+.cal .wd:first-child { color: #dc2626; }
+.cal .wd:nth-child(7) { color: #2563eb; }
+.cal .blank { min-height: 70px; }
+
+.cal button.day {
+  min-width: 0;
+  min-height: 75px;
+  padding: 7px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  text-align: left;
+}
+.cal button.day:hover { opacity: .8; }
+.cal button.day.today {
+  border: 2px solid #2563eb;
+}
+.cal button.day.sel {
+  box-shadow: inset 0 0 0 2px #2563eb;
+}
+.cal .day-number {
+  font-size: 16px;
+  font-weight: 600;
+}
+.cal .dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.cal .event-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+.cal .event-count {
+  font-size: 11px;
+  color: var(--sub);
+}
+
+/* 色分けの説明 */
+.calendar-color-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin: 16px 0;
+  font-size: 13px;
+}
+.calendar-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.calendar-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+/* 予定一覧 */
+.event-item {
+  padding: 12px 14px;
+}
+.event-item p {
+  margin: 6px 0;
+}
+.event-type-badge {
+  display: inline-block;
+  padding: 3px 9px;
+  margin-left: 8px;
+  border-radius: 20px;
+  color: white;
+  font-size: 12px;
+}
+.edit-event-btn {
+  margin-top: 8px;
+}
+
+/* 追加・編集フォーム */
+.event-form {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  margin: 12px 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+}
+.event-form label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 600;
+}
+.event-form input[type="text"],
+.event-form input[type="date"],
+.event-form select {
+  box-sizing: border-box;
+  width: 100%;
+}
+.event-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.preparation-box {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.preparation-box label {
+  font-weight: normal;
+  margin: 8px 0;
+}
+.preparation-box input[type="checkbox"] {
+  width: auto;
+}
+.event-message {
+  margin: 0;
+  font-size: 14px;
+}
+.calendar-status {
+  margin: 10px 0;
+  color: var(--accent);
+}
+[hidden] {
+  display: none !important;
+}
+
+/* スマホ対応 */
+@media (max-width: 600px) {
+  .cal { gap: 3px; }
+  .cal .wd {
+    padding: 6px 0;
+    font-size: 12px;
+  }
+  .cal button.day,
+  .cal .blank {
+    min-height: 55px;
+  }
+  .cal button.day { padding: 4px; }
+  .cal .day-number { font-size: 13px; }
+  .cal .event-dot {
+    width: 6px;
+    height: 6px;
+  }
+  .cal .event-count { font-size: 9px; }
+  .event-form-row {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
 </head>
+
 <body>
 <nav id="nav"></nav>
+
 <div id="app">
-<h1>カレンダー</h1>
-<div class="cal-head">
-  <button class="small" id="prev" aria-label="前の月">&lt;</button>
-  <strong id="monthLabel"></strong>
-  <button class="small" id="next" aria-label="次の月">&gt;</button>
-  <button class="small" id="todayBtn">今日</button>
+  <h1>カレンダー</h1>
+
+  <div class="cal-head">
+    <button class="small" id="prev" type="button">◀</button>
+    <strong id="monthLabel"></strong>
+    <button class="small" id="next" type="button">▶</button>
+    <button class="small" id="todayBtn" type="button">今日</button>
+  </div>
+
+  <div class="cal" id="cal"></div>
+
+  <div
+    id="calendarColorLegend"
+    class="calendar-color-legend"
+  ></div>
+
+  <p
+    id="calendarStatus"
+    class="calendar-status"
+    role="status"
+  ></p>
+
+  <h2 id="dayTitle"></h2>
+  <ul id="dayList"></ul>
+
+  <h3>新しい予定を追加</h3>
+  <div id="addEventArea"></div>
 </div>
-<div class="cal" id="cal"></div>
-<p class="legend"><span class="dot t"></span> タスク期限 <span class="dot c"></span> 企業の確認日 <span class="dot o"></span> 期限切れ <span class="dot d"></span> 完了</p>
-<h2 id="dayTitle"></h2>
-<ul id="dayList"></ul>
-</div>
+
 <script type="module">
-import { start, companies, tasks, dateString, companyName } from "./common.js";
+import {
+  start,
+  companies,
+  tasks,
+  saveTasks,
+  dateString
+} from "./common.js";
+
+// =====================================
+// 基本設定
+// =====================================
+
 const WEEK = ["日", "月", "火", "水", "木", "金", "土"];
-const LABEL = { t: "タスク", c: "確認日", o: "期限切れ", d: "完了" };
-let year = new Date().getFullYear();
-let month = new Date().getMonth();
+
+const EVENT_TYPES = [
+  "面接",
+  "インターン",
+  "インターン準備",
+  "選考準備",
+  "その他"
+];
+
+const PREPARATION_OPTIONS = [
+  "履歴書提出",
+  "ES提出",
+  "Webテスト（SPI）",
+  "Webテスト（玉手箱）",
+  "Webテスト（CAB）",
+  "Webテスト（その他）",
+  "AI面接",
+  "動画アップロード",
+  "その他"
+];
+
+const EVENT_COLORS = {
+  "面接": "#dc2626",
+  "インターン": "#2563eb",
+  "インターン準備": "#16a34a",
+  "選考準備": "#f59e0b",
+  "その他": "#8b5cf6",
+  "企業確認": "#0891b2"
+};
+
+const now = new Date();
+let year = now.getFullYear();
+let month = now.getMonth();
 let selected = dateString(0);
 
-function pad(n) { return String(n).padStart(2, "0"); }
-function ymd(y, m, d) { return y + "-" + pad(m + 1) + "-" + pad(d); }
+// =====================================
+// 日付処理
+// =====================================
+
+function pad(value) {
+  return String(value).padStart(2, "0");
+}
+
+function ymd(y, m, d) {
+  return `${y}-${pad(m + 1)}-${pad(d)}`;
+}
+
+function validDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  const [y, m, d] = value.split("-").map(Number);
+  const parsed = new Date(y, m - 1, d);
+
+  return (
+    parsed.getFullYear() === y &&
+    parsed.getMonth() === m - 1 &&
+    parsed.getDate() === d
+  );
+}
+
+function getEventColor(type) {
+  return EVENT_COLORS[type] || EVENT_COLORS["その他"];
+}
+
+// =====================================
+// 入力チェック（Python不要）
+// =====================================
+
+function validateEvent(data) {
+  const title = String(data.title || "").trim();
+  const date = String(data.date || "").trim();
+  const eventType = String(data.eventType || "");
+
+  if (!title) {
+    throw new Error("企業名・予定名を入力してください");
+  }
+
+  if (!validDate(date)) {
+    throw new Error("正しい予定日を入力してください");
+  }
+
+  if (!EVENT_TYPES.includes(eventType)) {
+    throw new Error("予定の種類を選択してください");
+  }
+
+  const isPreparation =
+    eventType === "インターン準備" ||
+    eventType === "選考準備";
+
+  const preparations = isPreparation
+    ? (data.preparations || []).filter(
+        item => PREPARATION_OPTIONS.includes(item)
+      )
+    : [];
+
+  const otherDetail = isPreparation
+    ? String(data.otherDetail || "").trim()
+    : "";
+
+  if (
+    preparations.includes("その他") &&
+    !otherDetail
+  ) {
+    throw new Error("その他の準備内容を入力してください");
+  }
+
+  return {
+    title,
+    date,
+    eventType,
+    preparations,
+    otherDetail
+  };
+}
+
+// =====================================
+// 企業名を取得
+// =====================================
+
+function getCompanyName(companyId) {
+  const company = companies.find(
+    item => item.id === companyId
+  );
+
+  return company ? company.name : "";
+}
+
+// =====================================
+// 指定日の予定を取得
+// =====================================
 
 function eventsFor(date) {
-  const today = dateString(0);
-  const ev = [];
-  tasks.forEach(function (t) {
-    if (t.due === date) {
-      const type = t.done ? "d" : (date < today ? "o" : "t");
-      ev.push({ type: type, text: (companyName(t.companyId) ? companyName(t.companyId) + ": " : "") + t.title });
-    }
+  const events = [];
+
+  tasks.forEach(task => {
+    if (task.due !== date) return;
+
+    const company = getCompanyName(task.companyId);
+
+    events.push({
+      text: company
+        ? `${company}：${task.title}`
+        : task.title,
+      eventType: task.eventType || "その他",
+      done: Boolean(task.done),
+      task
+    });
   });
-  companies.forEach(function (c) {
-    if (c.check === date) ev.push({ type: "c", text: c.name + " の採用ページを確認" });
+
+  companies.forEach(company => {
+    if (company.check !== date) return;
+
+    events.push({
+      text: `${company.name} の採用ページを確認`,
+      eventType: "企業確認",
+      done: false,
+      task: null
+    });
   });
-  return ev;
+
+  return events;
 }
+
+// =====================================
+// 色分けの説明
+// =====================================
+
+function renderLegend() {
+  const legend = document.getElementById(
+    "calendarColorLegend"
+  );
+
+  legend.replaceChildren();
+
+  [...EVENT_TYPES, "企業確認"].forEach(type => {
+    const item = document.createElement("span");
+    item.className = "calendar-legend-item";
+
+    const dot = document.createElement("span");
+    dot.className = "calendar-legend-dot";
+    dot.style.backgroundColor = getEventColor(type);
+
+    const label = document.createElement("span");
+    label.textContent = type === "企業確認"
+      ? "企業の確認日"
+      : type;
+
+    item.append(dot, label);
+    legend.appendChild(item);
+  });
+}
+
+// =====================================
+// カレンダー表示
+// =====================================
 
 function renderCal() {
-  document.getElementById("monthLabel").textContent = year + "年" + (month + 1) + "月";
+  document.getElementById("monthLabel").textContent =
+    `${year}年${month + 1}月`;
+
   const cal = document.getElementById("cal");
-  cal.innerHTML = "";
-  WEEK.forEach(function (w) {
-    const h = document.createElement("div");
-    h.className = "wd"; h.textContent = w;
-    cal.appendChild(h);
+  cal.replaceChildren();
+
+  WEEK.forEach(day => {
+    const header = document.createElement("div");
+    header.className = "wd";
+    header.textContent = day;
+    cal.appendChild(header);
   });
-  const first = new Date(year, month, 1).getDay();
+
+  const firstDay = new Date(year, month, 1).getDay();
   const days = new Date(year, month + 1, 0).getDate();
-  for (let i = 0; i < first; i++) {
-    const b = document.createElement("div");
-    b.className = "blank";
-    cal.appendChild(b);
+
+  for (let i = 0; i < firstDay; i++) {
+    const blank = document.createElement("div");
+    blank.className = "blank";
+    cal.appendChild(blank);
   }
+
   const today = dateString(0);
-  for (let d = 1; d <= days; d++) {
-    const date = ymd(year, month, d);
-    const btn = document.createElement("button");
-    btn.className = "day" + (date === today ? " today" : "") + (date === selected ? " sel" : "");
-    const num = document.createElement("span");
-    num.textContent = d;
-    btn.appendChild(num);
+
+  for (let day = 1; day <= days; day++) {
+    const date = ymd(year, month, day);
+    const events = eventsFor(date);
+
+    const button = document.createElement("button");
+    button.type = "button";
+
+    button.className =
+      "day" +
+      (date === today ? " today" : "") +
+      (date === selected ? " sel" : "");
+
+    const number = document.createElement("span");
+    number.className = "day-number";
+    number.textContent = String(day);
+    button.appendChild(number);
+
     const dots = document.createElement("span");
     dots.className = "dots";
-    eventsFor(date).slice(0, 4).forEach(function (e) {
+
+    events.slice(0, 5).forEach(event => {
       const dot = document.createElement("span");
-      dot.className = "dot " + e.type;
+      dot.className = "event-dot";
+      dot.style.backgroundColor =
+        getEventColor(event.eventType);
+      dot.title = `${event.eventType}：${event.text}`;
       dots.appendChild(dot);
     });
-    btn.appendChild(dots);
-    btn.onclick = function () { selected = date; renderCal(); renderDay(); };
-    cal.appendChild(btn);
+
+    button.appendChild(dots);
+
+    if (events.length > 0) {
+      const count = document.createElement("small");
+      count.className = "event-count";
+      count.textContent = `${events.length}件`;
+      button.appendChild(count);
+    }
+
+    button.onclick = () => {
+      selected = date;
+      renderCal();
+      renderDay();
+    };
+
+    cal.appendChild(button);
   }
 }
 
-function renderDay() {
-  document.getElementById("dayTitle").textContent = selected + " の予定";
-  const ul = document.getElementById("dayList");
-  ul.innerHTML = "";
-  const ev = eventsFor(selected);
-  if (ev.length === 0) { ul.innerHTML = "<li>予定はありません</li>"; return; }
-  ev.forEach(function (e) {
-    const li = document.createElement("li");
-    const tag = document.createElement("span");
-    tag.className = "tag " + e.type;
-    tag.textContent = LABEL[e.type];
-    li.appendChild(tag);
-    li.appendChild(document.createTextNode(e.text));
-    ul.appendChild(li);
+// =====================================
+// 予定追加・編集フォーム
+// =====================================
+
+function createEventForm(date, existingTask = null) {
+  const form = document.createElement("div");
+  form.className = "event-form";
+
+  // 予定名
+  const titleBox = document.createElement("div");
+
+  const titleLabel = document.createElement("label");
+  titleLabel.textContent = "企業名・予定名";
+
+  const titleInput = document.createElement("input");
+  titleInput.type = "text";
+  titleInput.placeholder = "例：森永乳業";
+  titleInput.value = existingTask
+    ? existingTask.title
+    : "";
+
+  titleBox.append(titleLabel, titleInput);
+
+  // 種類
+  const typeBox = document.createElement("div");
+
+  const typeLabel = document.createElement("label");
+  typeLabel.textContent = "予定の種類";
+
+  const typeSelect = document.createElement("select");
+
+  EVENT_TYPES.forEach(type => {
+    const option = document.createElement("option");
+    option.value = type;
+    option.textContent = type;
+    typeSelect.appendChild(option);
   });
+
+  typeSelect.value = existingTask
+    ? (existingTask.eventType || "その他")
+    : "面接";
+
+  typeBox.append(typeLabel, typeSelect);
+
+  const topRow = document.createElement("div");
+  topRow.className = "event-form-row";
+  topRow.append(titleBox, typeBox);
+
+  // 日付
+  const dateLabel = document.createElement("label");
+  dateLabel.textContent = "予定日";
+
+  const dateInput = document.createElement("input");
+  dateInput.type = "date";
+  dateInput.value = existingTask
+    ? existingTask.due
+    : date;
+
+  // 準備項目
+  const preparationBox = document.createElement("div");
+  preparationBox.className = "preparation-box";
+
+  const preparationTitle = document.createElement("p");
+  preparationTitle.textContent =
+    "必要な準備（複数選択できます）";
+
+  preparationBox.appendChild(preparationTitle);
+
+  const selectedPreparations =
+    Array.isArray(existingTask?.preparations)
+      ? existingTask.preparations
+      : [];
+
+  const checkboxes = [];
+
+  PREPARATION_OPTIONS.forEach(name => {
+    const label = document.createElement("label");
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.value = name;
+    checkbox.checked = selectedPreparations.includes(name);
+
+    label.append(
+      checkbox,
+      document.createTextNode(" " + name)
+    );
+
+    preparationBox.appendChild(label);
+    checkboxes.push(checkbox);
+  });
+
+  const otherInput = document.createElement("input");
+  otherInput.type = "text";
+  otherInput.placeholder = "その他の準備内容";
+  otherInput.value = existingTask?.otherDetail || "";
+
+  preparationBox.appendChild(otherInput);
+
+  const otherCheckbox = checkboxes.find(
+    checkbox => checkbox.value === "その他"
+  );
+
+  function updatePreparationVisibility() {
+    const isPreparation =
+      typeSelect.value === "インターン準備" ||
+      typeSelect.value === "選考準備";
+
+    preparationBox.hidden = !isPreparation;
+    otherInput.hidden =
+      !isPreparation || !otherCheckbox.checked;
+  }
+
+  typeSelect.onchange = updatePreparationVisibility;
+  otherCheckbox.onchange = updatePreparationVisibility;
+  updatePreparationVisibility();
+
+  // 保存
+  const saveButton = document.createElement("button");
+  saveButton.type = "button";
+  saveButton.textContent = existingTask
+    ? "変更を保存"
+    : "予定を追加";
+
+  const message = document.createElement("p");
+  message.className = "event-message";
+  message.setAttribute("role", "status");
+
+  saveButton.onclick = async () => {
+    saveButton.disabled = true;
+    message.textContent = "保存中...";
+
+    let newTask = null;
+    let previousTask = null;
+
+    try {
+      const preparations = checkboxes
+        .filter(checkbox => checkbox.checked)
+        .map(checkbox => checkbox.value);
+
+      const event = validateEvent({
+        title: titleInput.value,
+        date: dateInput.value,
+        eventType: typeSelect.value,
+        preparations,
+        otherDetail: otherInput.value
+      });
+
+      if (existingTask) {
+        previousTask = { ...existingTask };
+
+        Object.assign(existingTask, {
+          title: event.title,
+          due: event.date,
+          eventType: event.eventType,
+          preparations: event.preparations,
+          otherDetail: event.otherDetail
+        });
+      } else {
+        newTask = {
+          title: event.title,
+          due: event.date,
+          done: false,
+          eventType: event.eventType,
+          preparations: event.preparations,
+          otherDetail: event.otherDetail
+        };
+
+        tasks.push(newTask);
+      }
+
+      await saveTasks();
+
+      selected = event.date;
+
+      const [y, m] = event.date.split("-").map(Number);
+      year = y;
+      month = m - 1;
+
+      renderCal();
+      renderDay();
+
+      document.getElementById(
+        "calendarStatus"
+      ).textContent = "予定を保存しました。";
+
+    } catch (error) {
+      // 保存に失敗した場合は画面上の変更を戻す
+      if (newTask) {
+        const index = tasks.indexOf(newTask);
+        if (index !== -1) tasks.splice(index, 1);
+      }
+
+      if (existingTask && previousTask) {
+        Object.assign(existingTask, previousTask);
+      }
+
+      message.textContent =
+        error.message || "保存に失敗しました";
+
+    } finally {
+      saveButton.disabled = false;
+    }
+  };
+
+  form.append(
+    topRow,
+    dateLabel,
+    dateInput,
+    preparationBox,
+    saveButton,
+    message
+  );
+
+  return form;
 }
 
+// =====================================
+// 選択した日の予定
+// =====================================
+
+function renderDay() {
+  document.getElementById("dayTitle").textContent =
+    `${selected} の予定`;
+
+  const list = document.getElementById("dayList");
+  list.replaceChildren();
+
+  const events = eventsFor(selected);
+
+  if (events.length === 0) {
+    const empty = document.createElement("li");
+    empty.textContent = "予定はありません";
+    list.appendChild(empty);
+  }
+
+  events.forEach(event => {
+    const li = document.createElement("li");
+    li.className = "event-item";
+
+    const title = document.createElement("strong");
+    title.textContent = event.text;
+
+    const badge = document.createElement("span");
+    badge.className = "event-type-badge";
+    badge.textContent = event.eventType === "企業確認"
+      ? "企業の確認日"
+      : event.eventType;
+
+    badge.style.backgroundColor =
+      getEventColor(event.eventType);
+
+    li.append(title, badge);
+
+    if (event.task) {
+      const task = event.task;
+
+      const preparations = Array.isArray(task.preparations)
+        ? task.preparations
+        : [];
+
+      if (preparations.length > 0) {
+        const heading = document.createElement("p");
+        heading.textContent = "必要な準備：";
+        li.appendChild(heading);
+
+        const prepList = document.createElement("ul");
+
+        preparations.forEach(item => {
+          const prepItem = document.createElement("li");
+
+          prepItem.textContent =
+            item === "その他" && task.otherDetail
+              ? `その他：${task.otherDetail}`
+              : item;
+
+          prepList.appendChild(prepItem);
+        });
+
+        li.appendChild(prepList);
+      }
+
+      if (task.done) {
+        const done = document.createElement("p");
+        done.textContent = "完了済み";
+        li.appendChild(done);
+      }
+
+      const editButton = document.createElement("button");
+      editButton.type = "button";
+      editButton.className = "edit-event-btn";
+      editButton.textContent = "編集";
+
+      editButton.onclick = () => {
+        li.replaceChildren(
+          createEventForm(selected, task)
+        );
+      };
+
+      li.appendChild(editButton);
+    }
+
+    list.appendChild(li);
+  });
+
+  const addArea = document.getElementById("addEventArea");
+  addArea.replaceChildren(createEventForm(selected));
+}
+
+// =====================================
+// 前月・翌月・今日
+// =====================================
+
 function move(delta) {
-  month += delta;
-  if (month < 0) { month = 11; year--; }
-  if (month > 11) { month = 0; year++; }
+  const next = new Date(year, month + delta, 1);
+
+  year = next.getFullYear();
+  month = next.getMonth();
+
   renderCal();
 }
-document.getElementById("prev").onclick = function () { move(-1); };
-document.getElementById("next").onclick = function () { move(1); };
-document.getElementById("todayBtn").onclick = function () {
-  const n = new Date();
-  year = n.getFullYear(); month = n.getMonth(); selected = dateString(0);
-  renderCal(); renderDay();
+
+document.getElementById("prev").onclick = () => move(-1);
+document.getElementById("next").onclick = () => move(1);
+
+document.getElementById("todayBtn").onclick = () => {
+  const today = new Date();
+
+  year = today.getFullYear();
+  month = today.getMonth();
+  selected = dateString(0);
+
+  renderCal();
+  renderDay();
 };
-start("calendar.html", function () { renderCal(); renderDay(); });
+
+// =====================================
+// Firebase読み込み後に開始
+// =====================================
+
+start("calendar.html", () => {
+  renderLegend();
+  renderCal();
+  renderDay();
+});
+
 </script>
 </body>
 </html>
