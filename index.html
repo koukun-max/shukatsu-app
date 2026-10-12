@@ -21,7 +21,7 @@
 <ul id="soon"></ul>
 </div>
 <script type="module">
-import { start, companies, tasks, saveCompanies, dateString, makeLink } from "./common.js";
+import { start, companies, tasks, saveCompanies, dateString, makeLink, companyName } from "./common.js";
 function renderStats() {
   const today = dateString(0);
   const open = tasks.filter(function (t) { return !t.done; });
@@ -57,7 +57,7 @@ function renderSoon() {
   if (soon.length === 0) { ul.innerHTML = "<li>期限が近いタスクはありません</li>"; return; }
   soon.forEach(function (t) {
     const li = document.createElement("li");
-    li.textContent = t.title + "(期限: " + t.due + ")";
+    li.textContent = (companyName(t.companyId) ? "[" + companyName(t.companyId) + "] " : "") + t.title + "(期限: " + t.due + ")";
     if (t.due < dateString(0)) { li.textContent += " 期限切れ"; li.style.color = "red"; }
     ul.appendChild(li);
   });

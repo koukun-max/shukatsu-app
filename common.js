@@ -33,6 +33,16 @@ function scheduleSave() {
 }
 export function saveCompanies() { scheduleSave(); }
 export function saveTasks() { scheduleSave(); }
+export function newId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+export function ensureIds() {
+  let changed = false;
+  companies.forEach(function (c) { if (!c.id) { c.id = newId(); changed = true; } });
+  return changed;
+}
+export function companyName(id) {
+  const c = companies.find(function (x) { return x.id === id; });
+  return c ? c.name : "";
+}
 window.addEventListener("pagehide", function () { if (timer) saveNow(); });
 
 async function loadData() {
@@ -44,6 +54,7 @@ async function loadData() {
     (d.companies || []).forEach(function (c) { companies.push(c); });
     (d.tasks || []).forEach(function (t) { tasks.push(t); });
   }
+  if (ensureIds()) scheduleSave();
 }
 
 export function dateString(offset) {
@@ -60,7 +71,7 @@ export function makeLink(url) {
 }
 
 function renderNav(current) {
-  const pages = [["index.html","ホーム"],["tasks.html","タスク"],["companies.html","企業"],["backup.html","バックアップ"]];
+  const pages = [["index.html","ホーム"],["tasks.html","タスク"],["calendar.html","カレンダー"],["companies.html","企業"],["backup.html","バックアップ"]];
   const nav = document.getElementById("nav");
   pages.forEach(function (p) {
     const a = document.createElement("a");

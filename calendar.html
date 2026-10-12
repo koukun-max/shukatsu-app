@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>カレンダー - 就活管理</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav id="nav"></nav>
+<div id="app">
+<h1>カレンダー</h1>
+<div class="cal-head">
+  <button class="small" id="prev" aria-label="前の月">&lt;</button>
+  <strong id="monthLabel"></strong>
+  <button class="small" id="next" aria-label="次の月">&gt;</button>
+  <button class="small" id="todayBtn">今日</button>
+</div>
+<div class="cal" id="cal"></div>
+<p class="legend"><span class="dot t"></span> タスク期限 <span class="dot c"></span> 企業の確認日 <span class="dot o"></span> 期限切れ <span class="dot d"></span> 完了</p>
+<h2 id="dayTitle"></h2>
+<ul id="dayList"></ul>
+</div>
+<script type="module">
+import { start, companies, tasks, dateString, companyName } from "./common.js";
+const WEEK = ["日", "月", "火", "水", "木", "金", "土"];
+const LABEL = { t: "タスク", c: "確認日", o: "期限切れ", d: "完了" };
+let year = new Date().getFullYear();
+let month = new Date().getMonth();
+let selected = dateString(0);
+
+function pad(n) { return String(n).padStart(2, "0"); }
+function ymd(y, m, d) { return y + "-" + pad(m + 1) + "-" + pad(d); }
+
+function eventsFor(date) {
+  const today = dateString(0);
+  const ev = [];
+  tasks.forEach(function (t) {
+    if (t.due === date) {
+      const type = t.done ? "d" : (date < today ? "o" : "t");
+      ev.push({ type: type, text: (companyName(t.companyId) ? companyName(t.companyId) + ": " : "") + t.title });
+    }
+  });
+  companies.forEach(function (c) {
+    if (c.check === date) ev.push({ type: "c", text: c.name + " の採用ページを確認" });
+  });
+  return ev;
+}
+
+function renderCal() {
+  document.getElementById("monthLabel").textContent = year + "年" + (month + 1) + "月";
+  const cal = document.getElementById("cal");
+  cal.innerHTML = "";
+  WEEK.forEach(function (w) {
+    const h = document.createElement("div");
+    h.className = "wd"; h.textContent = w;
+    cal.appendChild(h);
+  });
+  const first = new Date(year, month, 1).getDay();
+  const days = new Date(year, month + 1, 0).getDate();
+  for (let i = 0; i < first; i++) {
+    const b = document.createElement("div");
+    b.className = "blank";
+    cal.appendChild(b);
+  }
+  const today = dateString(0);
+  for (let d = 1; d <= days; d++) {
+    const date = ymd(year, month, d);
+    const btn = document.createElement("button");
+    btn.className = "day" + (date === today ? " today" : "") + (date === selected ? " sel" : "");
+    const num = document.createElement("span");
+    num.textContent = d;
+    btn.appendChild(num);
+    const dots = document.createElement("span");
+    dots.className = "dots";
+    eventsFor(date).slice(0, 4).forEach(function (e) {
+      const dot = document.createElement("span");
+      dot.className = "dot " + e.type;
+      dots.appendChild(dot);
+    });
+    btn.appendChild(dots);
+    btn.onclick = function () { selected = date; renderCal(); renderDay(); };
+    cal.appendChild(btn);
+  }
+}
+
+function renderDay() {
+  document.getElementById("dayTitle").textContent = selected + " の予定";
+  const ul = document.getElementById("dayList");
+  ul.innerHTML = "";
+  const ev = eventsFor(selected);
+  if (ev.length === 0) { ul.innerHTML = "<li>予定はありません</li>"; return; }
+  ev.forEach(function (e) {
+    const li = document.createElement("li");
+    const tag = document.createElement("span");
+    tag.className = "tag " + e.type;
+    tag.textContent = LABEL[e.type];
+    li.appendChild(tag);
+    li.appendChild(document.createTextNode(e.text));
+    ul.appendChild(li);
+  });
+}
+
+function move(delta) {
+  month += delta;
+  if (month < 0) { month = 11; year--; }
+  if (month > 11) { month = 0; year++; }
+  renderCal();
+}
+document.getElementById("prev").onclick = function () { move(-1); };
+document.getElementById("next").onclick = function () { move(1); };
+document.getElementById("todayBtn").onclick = function () {
+  const n = new Date();
+  year = n.getFullYear(); month = n.getMonth(); selected = dateString(0);
+  renderCal(); renderDay();
+};
+start("calendar.html", function () { renderCal(); renderDay(); });
+</script>
+</body>
+</html>

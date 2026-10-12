@@ -21,7 +21,7 @@
 <ul id="list"></ul>
 </div>
 <script type="module">
-import { start, companies, saveCompanies, makeLink } from "./common.js";
+import { start, companies, tasks, saveCompanies, saveTasks, makeLink, newId } from "./common.js";
 const STATUSES = ["気になる", "ES提出", "面接", "内定", "見送り"];
 const STATUS_CLASS = {"気になる":"s-interest","ES提出":"s-es","面接":"s-interview","内定":"s-offer","見送り":"s-out"};
 let currentFilter = "all";
@@ -37,6 +37,46 @@ function renderFilters() {
     b.onclick = function () { currentFilter = s; render(); };
     box.appendChild(b);
   });
+}
+function taskBlock(c) {
+  const box = document.createElement("div");
+  box.className = "linked";
+  const related = tasks.filter(function (t) { return t.companyId === c.id; });
+  related.sort(function (a, b) { return (a.done - b.done) || ((a.due === "") - (b.due === "")) || a.due.localeCompare(b.due); });
+  const open = related.filter(function (t) { return !t.done; }).length;
+  const head = document.createElement("small");
+  head.textContent = "この企業のタスク(未完了 " + open + "件)";
+  box.appendChild(head);
+  related.forEach(function (t) {
+    const row = document.createElement("div");
+    row.className = "row";
+    const cb = document.createElement("input");
+    cb.type = "checkbox"; cb.checked = t.done;
+    cb.onchange = function () { t.done = cb.checked; saveTasks(); render(); };
+    const span = document.createElement("span");
+    span.textContent = (t.due ? "[" + t.due + "] " : "") + t.title;
+    if (t.done) span.style.textDecoration = "line-through";
+    row.append(cb, span);
+    box.appendChild(row);
+  });
+  const add = document.createElement("div");
+  add.className = "row";
+  const title = document.createElement("input");
+  title.type = "text"; title.placeholder = "この企業のタスクを追加(例: ES提出)";
+  const due = document.createElement("input");
+  due.type = "date";
+  const btn = document.createElement("button");
+  btn.textContent = "追加";
+  btn.onclick = function () {
+    const v = title.value.trim();
+    if (v === "") return;
+    tasks.push({ title: v, due: due.value, done: false, companyId: c.id });
+    saveTasks();
+    render();
+  };
+  add.append(title, due, btn);
+  box.appendChild(add);
+  return box;
 }
 function render() {
   renderFilters();
@@ -74,12 +114,19 @@ function render() {
     li.appendChild(document.createTextNode(" "));
     const del = document.createElement("button");
     del.textContent = "削除";
-    del.onclick = function () { companies.splice(companies.indexOf(c), 1); saveCompanies(); render(); };
+    del.onclick = function () {
+      tasks.forEach(function (t) { if (t.companyId === c.id) t.companyId = ""; });
+      saveTasks();
+      companies.splice(companies.indexOf(c), 1);
+      saveCompanies();
+      render();
+    };
     li.appendChild(del);
     const memo = document.createElement("textarea");
     memo.rows = 3; memo.placeholder = "メモ(調べたこと、面接で聞かれたことなど)"; memo.value = c.memo || "";
     memo.oninput = function () { c.memo = memo.value; saveCompanies(); };
     li.appendChild(memo);
+    li.appendChild(taskBlock(c));
     list.appendChild(li);
   });
 }
@@ -92,7 +139,7 @@ document.getElementById("addBtn").onclick = function () {
   const status = document.getElementById("status").value;
   if (name === "") return;
   if (url !== "" && !/^https?:\/\//.test(url)) { alert("URLは http:// または https:// から入力してください"); return; }
-  companies.push({ name: name, url: url, status: status, check: checkInput.value, memo: "" });
+  companies.push({ id: newId(), name: name, url: url, status: status, check: checkInput.value, memo: "" });
   saveCompanies();
   nameInput.value = ""; urlInput.value = ""; checkInput.value = "";
   render();
