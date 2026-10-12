@@ -1,11 +1,11 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { initializeFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
 const fbApp = initializeApp(firebaseConfig);
 const auth = getAuth(fbApp);
-const db = getFirestore(fbApp);
+const db = initializeFirestore(fbApp, { ignoreUndefinedProperties: true });
 
 export const companies = [];
 export const tasks = [];
@@ -24,15 +24,17 @@ export async function saveNow() {
     await setDoc(ref(), { companies: companies, tasks: tasks });
     if (s) s.textContent = "保存済み";
   } catch (e) {
-    if (s) s.textContent = "保存できませんでした";
+    console.error(e);
+    if (s) s.textContent = "保存できませんでした(" + (e.code || "error") + ")";
   }
 }
 function scheduleSave() {
   clearTimeout(timer);
   timer = setTimeout(saveNow, 600);
 }
-export function saveCompanies() { scheduleSave(); }
-export function saveTasks() { scheduleSave(); }
+export function saveCompanies() { saveNow(); }
+export function saveTasks() { saveNow(); }
+export function saveSoon() { scheduleSave(); }
 export function newId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 export function ensureIds() {
   let changed = false;
