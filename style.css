@@ -549,3 +549,89 @@ button.small {
   padding: 4px 8px;
   margin-left: 4px;
 }
+/* =====================================
+   ES管理
+===================================== */
+
+input[type="number"] {
+  font: inherit;
+  font-size: 16px;
+  width: 6em;
+  color: var(--text);
+  background: var(--card);
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  margin: 3px 0;
+}
+
+.es-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.es-tools input[type="text"] {
+  flex: 1;
+  min-width: 180px;
+}
+
+.es-card.done {
+  opacity: .65;
+}
+
+.es-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.es-question {
+  width: 100%;
+  font-weight: 600;
+}
+
+.es-count {
+  text-align: right;
+  font-size: .85rem;
+  color: var(--sub);
+}
+
+.es-count.near {
+  color: #b7791f;
+}
+
+.es-count.over {
+  color: #c2412d;
+  font-weight: 600;
+}
+
+.es-ops {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+button.danger {
+  color: #c2412d;
+}
+
+.es-link {
+  margin-left: 6px;
+  font-size: .9rem;
+}
+
+#esQuestion {
+  width: 100%;
+}
+
+@media (max-width: 600px) {
+  #esAddBtn {
+    width: 100%;
+    margin-top: 6px;
+  }
+}

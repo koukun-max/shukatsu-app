@@ -9,11 +9,17 @@ const db = initializeFirestore(fbApp, { ignoreUndefinedProperties: true });
 
 export const companies = [];
 export const tasks = [];
+export const esList = [];
 let uid = null;
 let timer = null;
 
 function ref() {
   return doc(db, "users", uid, "data", "app");
+}
+
+// ESは別の文書に保存する(古い画面から保存されても消えないようにするため)
+function esRef() {
+  return doc(db, "users", uid, "data", "es");
 }
 
 export async function saveNow() {
@@ -27,10 +33,15 @@ export async function saveNow() {
   try {
     if (s) s.textContent = "保存中...";
 
-    await setDoc(ref(), {
-      companies: companies,
-      tasks: tasks
-    });
+    await Promise.all([
+      setDoc(ref(), {
+        companies: companies,
+        tasks: tasks
+      }),
+      setDoc(esRef(), {
+        items: esList
+      })
+    ]);
 
     if (s) s.textContent = "保存済み";
 
@@ -80,6 +91,13 @@ export function ensureIds() {
     }
   });
 
+  esList.forEach(function (e) {
+    if (!e.id) {
+      e.id = newId();
+      changed = true;
+    }
+  });
+
   return changed;
 }
 
@@ -96,10 +114,20 @@ window.addEventListener("pagehide", function () {
 });
 
 async function loadData() {
-  const snap = await getDoc(ref());
+  const [snap, esSnap] = await Promise.all([
+    getDoc(ref()),
+    getDoc(esRef())
+  ]);
 
   companies.length = 0;
   tasks.length = 0;
+  esList.length = 0;
+
+  if (esSnap.exists()) {
+    (esSnap.data().items || []).forEach(function (e) {
+      esList.push(e);
+    });
+  }
 
   if (snap.exists()) {
     const d = snap.data();
@@ -138,6 +166,11 @@ export function dateString(offset) {
   );
 }
 
+// ESの文字数を数える(改行は数えない。絵文字なども1文字として数える)
+export function countChars(text) {
+  return Array.from((text || "").replace(/\r?\n/g, "")).length;
+}
+
 export function makeLink(url) {
   const a = document.createElement("a");
 
@@ -159,6 +192,7 @@ function renderNav(current) {
     ["index.html", "ホーム"],
     ["tasks.html", "タスク"],
     ["companies.html", "企業"],
+    ["es.html", "ES"],
     ["backup.html", "バックアップ"]
   ];
 

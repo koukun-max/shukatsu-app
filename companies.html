@@ -21,7 +21,7 @@
 <ul id="list"></ul>
 </div>
 <script type="module">
-import { start, companies, tasks, saveCompanies, saveTasks, saveSoon, makeLink, newId } from "./common.js";
+import { start, companies, tasks, esList, saveCompanies, saveTasks, saveSoon, makeLink, newId } from "./common.js";
 const STATUSES = ["気になる", "ES提出", "面接", "内定", "見送り"];
 const STATUS_CLASS = {"気になる":"s-interest","ES提出":"s-es","面接":"s-interview","内定":"s-offer","見送り":"s-out"};
 let currentFilter = "all";
@@ -96,6 +96,12 @@ function render() {
     title.textContent = c.name + " ";
     li.appendChild(title);
     if (c.url) li.appendChild(makeLink(c.url));
+    const esCount = esList.filter(function (e) { return e.companyId === c.id; }).length;
+    const esLink = document.createElement("a");
+    esLink.href = "es.html?company=" + encodeURIComponent(c.id);
+    esLink.className = "es-link";
+    esLink.textContent = "ES " + esCount + "件";
+    li.appendChild(esLink);
     li.appendChild(document.createElement("br"));
     li.appendChild(document.createTextNode("選考状況 "));
     const sel = document.createElement("select");
@@ -116,6 +122,7 @@ function render() {
     del.textContent = "削除";
     del.onclick = function () {
       tasks.forEach(function (t) { if (t.companyId === c.id) t.companyId = ""; });
+      esList.forEach(function (e) { if (e.companyId === c.id) e.companyId = ""; });
       saveTasks();
       companies.splice(companies.indexOf(c), 1);
       saveCompanies();

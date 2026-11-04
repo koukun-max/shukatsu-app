@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ES - 就活管理</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav id="nav"></nav>
+<div id="app">
+<h1>ES</h1>
+
+<h2>設問を追加</h2>
+<label>企業 <select id="esCompany"></select></label>
+<input type="text" id="esQuestion" placeholder="設問(例: 自己PRをしてください)">
+<label>文字数の上限 <input type="number" id="esLimit" min="1" step="1" placeholder="400"></label>
+<button id="esAddBtn">追加</button>
+
+<h2>ES一覧</h2>
+<div class="es-tools">
+  <label>表示する企業 <select id="esFilter"></select></label>
+  <input type="text" id="esSearch" placeholder="設問・回答から検索(例: 自己PR)">
+  <label class="toggle"><input type="checkbox" id="esHideDone"> 提出済みを隠す</label>
+</div>
+<p id="esNote"></p>
+<ul id="esListView"></ul>
+</div>
+
+<script type="module">
+import { start, companies, esList, saveNow, saveSoon, newId, companyName, countChars } from "./common.js";
+
+let filter = "all";
+let keyword = "";
+let hideDone = false;
+
+// 企業ページの「ES」リンクから来たときは、その企業だけを表示する
+const fromCompany = new URLSearchParams(location.search).get("company");
+if (fromCompany) filter = fromCompany;
+
+function opt(v, t) {
+  const o = document.createElement("option");
+  o.value = v;
+  o.textContent = t;
+  return o;
+}
+
+function fillSelects() {
+  const add = document.getElementById("esCompany");
+  const fil = document.getElementById("esFilter");
+  add.innerHTML = "";
+  fil.innerHTML = "";
+  add.appendChild(opt("", "企業なし(共通の下書き)"));
+  fil.appendChild(opt("all", "すべて"));
+  fil.appendChild(opt("none", "企業なし"));
+  companies.forEach(function (c) {
+    add.appendChild(opt(c.id, c.name));
+    fil.appendChild(opt(c.id, c.name));
+  });
+  if (filter !== "all" && filter !== "none" && !companyName(filter)) filter = "all";
+  fil.value = filter;
+  if (filter !== "all" && filter !== "none") add.value = filter;
+}
+
+function matchFilter(e) {
+  if (filter === "all") return true;
+  if (filter === "none") return !companyName(e.companyId);
+  return e.companyId === filter;
+}
+
+function matchKeyword(e) {
+  if (keyword === "") return true;
+  const k = keyword.toLowerCase();
+  return (e.question || "").toLowerCase().includes(k) ||
+    (e.answer || "").toLowerCase().includes(k);
+}
+
+// 文字数の表示を更新する(上限を超えたら赤くする)
+function updateCounter(el, e) {
+  const n = countChars(e.answer);
+  const limit = Number(e.limit) || 0;
+  el.className = "es-count";
+  if (limit > 0) {
+    const rest = limit - n;
+    el.textContent = n + " / " + limit + "字" +
+      (rest >= 0 ? "(残り " + rest + "字)" : "(" + (-rest) + "字オーバー)");
+    if (rest < 0) el.className = "es-count over";
+    else if (rest <= limit * 0.1) el.className = "es-count near";
+  } else {
+    el.textContent = n + "字";
+  }
+}
+
+function card(e) {
+  const li = document.createElement("li");
+  li.className = "es-card" + (e.done ? " done" : "");
+
+  // 1行目: 企業名と提出済み
+  const head = document.createElement("div");
+  head.className = "es-head";
+  const co = document.createElement("strong");
+  co.textContent = companyName(e.companyId) || "企業なし";
+  const doneLabel = document.createElement("label");
+  const done = document.createElement("input");
+  done.type = "checkbox";
+  done.checked = !!e.done;
+  done.onchange = function () { e.done = done.checked; saveNow(); render(); };
+  doneLabel.append(done, document.createTextNode("提出済み"));
+  head.append(co, doneLabel);
+  li.appendChild(head);
+
+  // 設問と文字数の上限
+  const q = document.createElement("input");
+  q.type = "text";
+  q.className = "es-question";
+  q.placeholder = "設問";
+  q.value = e.question || "";
+  q.oninput = function () { e.question = q.value; saveSoon(); };
+
+  const limitLabel = document.createElement("label");
+  const limit = document.createElement("input");
+  limit.type = "number";
+  limit.min = "1";
+  limit.step = "1";
+  limit.value = e.limit || "";
+  limitLabel.append(document.createTextNode("上限 "), limit, document.createTextNode(" 字"));
+
+  li.append(q, limitLabel);
+
+  // 回答と文字数
+  const answer = document.createElement("textarea");
+  answer.rows = 8;
+  answer.placeholder = "回答を入力";
+  answer.value = e.answer || "";
+  const counter = document.createElement("div");
+  updateCounter(counter, e);
+  answer.oninput = function () {
+    e.answer = answer.value;
+    updateCounter(counter, e);
+    saveSoon();
+  };
+  limit.oninput = function () {
+    e.limit = limit.value === "" ? "" : Number(limit.value);
+    updateCounter(counter, e);
+    saveSoon();
+  };
+  li.append(answer, counter);
+
+  // 操作ボタン: コピー、別の企業に複製、削除
+  const ops = document.createElement("div");
+  ops.className = "row es-ops";
+
+  const copy = document.createElement("button");
+  copy.className = "small";
+  copy.textContent = "回答をコピー";
+  copy.onclick = async function () {
+    try {
+      await navigator.clipboard.writeText(e.answer || "");
+      copy.textContent = "コピーしました";
+    } catch (err) {
+      copy.textContent = "コピーできませんでした";
+    }
+    setTimeout(function () { copy.textContent = "回答をコピー"; }, 1500);
+  };
+
+  const target = document.createElement("select");
+  target.className = "co-select";
+  target.appendChild(opt("", "企業なし"));
+  companies.forEach(function (c) { target.appendChild(opt(c.id, c.name)); });
+  const dup = document.createElement("button");
+  dup.className = "small";
+  dup.textContent = "この企業に複製";
+  dup.onclick = function () {
+    esList.unshift({
+      id: newId(),
+      companyId: target.value,
+      question: e.question || "",
+      limit: e.limit || "",
+      answer: e.answer || "",
+      done: false,
+      updated: Date.now()
+    });
+    saveNow();
+    render();
+  };
+
+  const del = document.createElement("button");
+  del.className = "small danger";
+  del.textContent = "削除";
+  del.onclick = function () {
+    if (!confirm("このESを削除しますか?")) return;
+    esList.splice(esList.indexOf(e), 1);
+    saveNow();
+    render();
+  };
+
+  ops.append(copy, target, dup, del);
+  li.appendChild(ops);
+  return li;
+}
+
+function render() {
+  const ul = document.getElementById("esListView");
+  ul.innerHTML = "";
+  const base = esList.filter(matchFilter).filter(matchKeyword);
+  const doneCount = base.filter(function (e) { return e.done; }).length;
+  document.getElementById("esNote").textContent =
+    hideDone && doneCount > 0 ? "提出済み " + doneCount + "件を非表示にしています" : "";
+  const shown = base.filter(function (e) { return !(hideDone && e.done); });
+  if (shown.length === 0) {
+    const li = document.createElement("li");
+    li.textContent = esList.length === 0 ? "ESはまだ登録されていません" : "表示するESはありません";
+    ul.appendChild(li);
+    return;
+  }
+  // 未提出を先に、その中では新しく追加したものを上に
+  shown.sort(function (a, b) {
+    return (!!a.done - !!b.done) || ((b.updated || 0) - (a.updated || 0));
+  });
+  shown.forEach(function (e) { ul.appendChild(card(e)); });
+}
+
+document.getElementById("esAddBtn").onclick = function () {
+  const qInput = document.getElementById("esQuestion");
+  const lInput = document.getElementById("esLimit");
+  const question = qInput.value.trim();
+  if (question === "") return;
+  esList.unshift({
+    id: newId(),
+    companyId: document.getElementById("esCompany").value,
+    question: question,
+    limit: lInput.value === "" ? "" : Number(lInput.value),
+    answer: "",
+    done: false,
+    updated: Date.now()
+  });
+  saveNow();
+  qInput.value = "";
+  lInput.value = "";
+  render();
+};
+
+document.getElementById("esFilter").onchange = function (ev) { filter = ev.target.value; render(); };
+document.getElementById("esSearch").oninput = function (ev) { keyword = ev.target.value.trim(); render(); };
+document.getElementById("esHideDone").onchange = function (ev) { hideDone = ev.target.checked; render(); };
+
+start("es.html", function () { fillSelects(); render(); });
+</script>
+</body>
+</html>
